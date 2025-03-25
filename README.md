@@ -81,11 +81,11 @@ Follow these steps to set up the project locally:
    ```
 
 4. **Set up environment variables**:
-   Create a `.env` file in the root directory and add the following variables:
+   Create a `config.env` file in the root directory and add the following variables:
    ```plaintext
    PORT=<your-port>
    CONN_STR=<your-mongodb-connection-string>
-   JWT_SECRET=<your-jwt-secret>
+   SECRET_STR=<your-jwt-secret-string>
    LOGIN_EXPIRES=<jwt-expiration-time>
    EMAIL_HOST=<your-email-host>
    EMAIL_PORT=<your-email-port>
