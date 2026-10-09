@@ -13,6 +13,12 @@ const globalErrorHandler = require("./Controllers/errorController");
 const authRouter = require('./Routes/authRouter')
 const userRoute = require('./Routes/userRoutes')
 
+// behind a reverse proxy (e.g. the Docker nginx frontend) the client IP comes from X-Forwarded-For;
+// TRUST_PROXY is the number of proxies in front of the app
+if (process.env.TRUST_PROXY) {
+  app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY)
+}
+
 app.use(helmet()) // adding security headers
 
 let limiter = rateLimit({  //Brute Force attack

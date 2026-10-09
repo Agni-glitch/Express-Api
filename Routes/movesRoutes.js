@@ -16,11 +16,11 @@ moviesRouter
 moviesRouter
   .route("/")
   .get(authController.protect,moviesController.getAllMovies)
-  .post(moviesController.addMovie);
+  .post(authController.protect,authController.restrict('admin'),moviesController.addMovie);
 moviesRouter
   .route("/:id")
   .get(authController.protect,moviesController.getOneMovie)
-  .patch(moviesController.updateMovie)
+  .patch(authController.protect,authController.restrict('admin'),moviesController.updateMovie)
   .delete(authController.protect,authController.restrict('admin'),moviesController.deleteMovie);
 
 module.exports = moviesRouter;

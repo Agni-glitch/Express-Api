@@ -5,7 +5,10 @@ class ApiFeatures {
   }
 
   filter() {
-    let queryString = JSON.stringify(this.queryStr);
+    const filterObj = { ...this.queryStr };
+    ["sort", "fields", "page", "limit"].forEach((el) => delete filterObj[el]);
+
+    let queryString = JSON.stringify(filterObj);
     queryString = queryString.replace(
       /\b(gte|gt|lte|lt)\b/g,
       (match) => `$${match}`
@@ -16,7 +19,7 @@ class ApiFeatures {
   }
 
   sort() {
-    if (this.queryStr.sort) {
+    if (typeof this.queryStr.sort === "string") {
       const sortBy = this.queryStr.sort.split(",").join(" ");
       this.query = this.query.sort(sortBy);
     } else {
@@ -26,7 +29,7 @@ class ApiFeatures {
   }
 
   limitFields() {
-    if (this.queryStr.fields) {
+    if (typeof this.queryStr.fields === "string") {
       const fields = this.queryStr.fields.split(",").join(" ");
       this.query = this.query.select(fields);
     } else {

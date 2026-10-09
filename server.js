@@ -9,11 +9,10 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = require("./index");
+const dnsFallback = require("./Utils/dnsFallback");
 
-mongoose
-  .connect(process.env.CONN_STR, {
-    useNewUrlParser: true,
-  })
+dnsFallback(process.env.CONN_STR)
+  .then(() => mongoose.connect(process.env.CONN_STR))
   .then((conn) => {
     console.log("DB connection successful");
   })

@@ -4,6 +4,8 @@ const authController = require('../Controllers/authController')
 const userController = require('../Controllers/userController')
 
 router.route('/getAllUsers').get(
+    authController.protect,
+    authController.restrict('admin'),
     userController.getAllUsers
 )
 router.route('/updatePassword').patch(

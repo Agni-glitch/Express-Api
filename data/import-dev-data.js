@@ -2,13 +2,12 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const fs = require("fs");
 const Movie = require("./../Models/movieModel");
+const dnsFallback = require("./../Utils/dnsFallback");
 
 dotenv.config({ path: "./config.env" });
 
-mongoose
-  .connect(process.env.CONN_STR, {
-    useNewUrlParser: true,
-  })
+dnsFallback(process.env.CONN_STR)
+  .then(() => mongoose.connect(process.env.CONN_STR))
   .then((conn) => {
     console.log("DB connection successful");
   })

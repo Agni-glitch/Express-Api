@@ -24,7 +24,7 @@ const movieSchema = new mongoose.Schema(
       type: Number,
       validate: {
         validator: function (value) {
-          value >= 1 && value <= 5;
+          return value >= 1 && value <= 5;
         },
         message:
           "({VALUE}): Ratings should be equal to 1 or more and also should be 5 or less",
@@ -42,7 +42,7 @@ const movieSchema = new mongoose.Schema(
     },
     createdAt: {
       type: Date,
-      default: Date.now(),
+      default: Date.now,
       select: false,
     },
     genres: {
@@ -98,11 +98,19 @@ movieSchema.pre("save", function (next) {
   next();
 });
 
+// logging must never fail the request, so errors are only reported
+const writeLog = (content) => {
+  try {
+    fs.mkdirSync("./Log", { recursive: true });
+    fs.writeFileSync("./Log/log.txt", content, { flag: "a" });
+  } catch (err) {
+    console.log(err.message);
+  }
+};
+
 movieSchema.post("save", function (doc, next) {
   const content = `A new movie document with name ${doc.name} has been created by ${doc.createdBy}\n`;
-  fs.writeFileSync("./Log/log.txt", content, { flag: "a" }, (err) => {
-    console.log(err.message);
-  });
+  writeLog(content);
   next();
 });
 
@@ -113,23 +121,18 @@ movieSchema.pre(/^find/, function (next) {
 });
 
 movieSchema.post(/^find/, function (docs, next) {
-  this.find({ releaseDate: { $lte: Date.now() } });
   this.endTime = Date.now();
-  content = `Query took ${
+  const content = `Query took ${
     this.endTime - this.startTime
   } milliseconds to fetch the document\n`;
-  fs.writeFileSync("./Log/log.txt", content, { flag: "a" }, (err) => {
-    console.log(err.message);
-  });
+  writeLog(content);
   next();
 });
 
 movieSchema.pre("aggregate", function (next) {
-  console.log(
-    this.pipeline().unshift({
-      $match: { releaseDate: { $lte: new Data.now() } },
-    })
-  );
+  this.pipeline().unshift({
+    $match: { releaseDate: { $lte: new Date() } },
+  });
   next();
 });
 

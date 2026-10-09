@@ -10,7 +10,7 @@ const sendEmail = async (option) => {
       secure: false,
     });
     const emailOptions = {
-      form: "Cineflix support<support@cineflix.com>",
+      from: "Cineflix support<support@cineflix.com>",
       to: option.email,
       subject: option.subject,
       text: option.message,

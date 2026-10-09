@@ -30,7 +30,7 @@ const filterReqObj =(obj,...allowedFields)=>{
 
 exports.updatePassword = asyncErrorHandler(async (req,res,next)=>{
     const user = await User.findById(req.user._id).select('+password')
-    if(!(await user.comparePasswordInDb(req.body.currentPassword, user.password))){
+    if(typeof req.body.currentPassword!=='string' || !(await user.comparePasswordInDb(req.body.currentPassword, user.password))){
         return next(new customError('The current password you provided is wrong',401))
     }
     user.password = req.body.password
@@ -45,7 +45,7 @@ exports.updateMe =asyncErrorHandler(async(req,res,next)=>{
     }
     const filterObj = filterReqObj(req.body, 'name','email')
     const updateUser = await User.findByIdAndUpdate(req.user._id,filterObj,{runValidators:true,new:true})
-    res.status(204).json({
+    res.status(200).json({
         status:'success',
         data:{
             user:updateUser
@@ -54,7 +54,7 @@ exports.updateMe =asyncErrorHandler(async(req,res,next)=>{
 
 })
 exports.deleteMe = asyncErrorHandler(async(req,res,next)=>{
-    await User.findByIdAndDelete(req.user._id,{active:false})
+    await User.findByIdAndUpdate(req.user._id,{active:false})
     res.status(204).json({
         status:'success',
         data:null

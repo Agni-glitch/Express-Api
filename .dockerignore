@@ -1,0 +1,16 @@
+node_modules
+frontend
+Log
+postman
+.git
+.github
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.md
+
+# secrets are passed in at runtime, never baked into the image
+config.env
+.env
+.env.*

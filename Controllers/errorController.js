@@ -29,8 +29,8 @@ const castErrorHandler = (err) => {
 };
 
 const duplicateKeyErrorHandler = (err) => {
-  const name = err.keyValue.name;
-  const msg = `There is already a movie with name ${name}. Please use another name!`;
+  const [field, value] = Object.entries(err.keyValue || {})[0] || [];
+  const msg = `There is already a record with ${field} ${value}. Please use another ${field}!`;
   return new customError(msg, 400);
 };
 
@@ -52,16 +52,16 @@ const handleJwtError =(err)=>{
 module.exports = (error, req, res, next) => {
   error.statusCode = error.statusCode || 500;
   error.status = error.status || "error";
-  if (process.env.NODE_ENV === "development") {
-    devError(res, error);
-  } else if (process.env.NODE_ENV === "production") {
-    if (error.name === "CastError") error = castErrorHandler(error);
-    if (error.code === 11000) error = duplicateKeyErrorHandler(error);
-    if (error.name === "ValidationError") error = validationErrorHandler(error);
+  if (error.name === "CastError") error = castErrorHandler(error);
+  if (error.code === 11000) error = duplicateKeyErrorHandler(error);
+  if (error.name === "ValidationError") error = validationErrorHandler(error);
 
-    if(error.name === "TokenExpiredError") error = handleExpiredJwt(error)
-    if(error.name === "JsonWebTokenError") error = handleJwtError(error)
-    
+  if(error.name === "TokenExpiredError") error = handleExpiredJwt(error)
+  if(error.name === "JsonWebTokenError") error = handleJwtError(error)
+
+  if (process.env.NODE_ENV === "production") {
     prodError(res, error);
+  } else {
+    devError(res, error);
   }
 };

@@ -86,12 +86,12 @@ exports.getMovieStats = asyncErrorHAndler(async (req, res, next) => {
     { $match: { ratings: { $gte: 4.5 } } },
     {
       $group: {
-        _id: "releaseYear",
+        _id: "$releaseYear",
         avgRating: { $avg: "$ratings" },
         avgPrice: { $avg: "$price" },
         maxPrice: { $max: "$price" },
         minPrice: { $min: "$price" },
-        priceTotal: { $sum: "&price" },
+        priceTotal: { $sum: "$price" },
         movieCount: { $sum: 1 },
       },
     },

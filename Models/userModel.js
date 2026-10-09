@@ -2,7 +2,6 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
-const { passwordReset } = require('../Controllers/authController')
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -11,7 +10,7 @@ const userSchema = new mongoose.Schema({
     },
     email:{
         type:String,
-        required:[true,"Please enter your name"],
+        required:[true,"Please enter your email"],
         unique:true,
         lowercase:true,
         validate:[validator.isEmail,'Please enter a valid email']
@@ -33,7 +32,7 @@ const userSchema = new mongoose.Schema({
         required:[true,"Please confirm your password"],
         validate:{
             validator:function(val){
-                return val = this.password;
+                return val === this.password;
             },
             message:"Password and confirm password doesn't match"
         }
@@ -53,6 +52,8 @@ userSchema.pre('save',async function(next){
 
     this.password= await bcrypt.hash(this.password,12);
     this.confirmPassword = undefined
+    // backdated by 1s so the token issued right after the change is still valid
+    if(!this.isNew) this.passwordChangedAt = Date.now()-1000
     next()
 })
 
