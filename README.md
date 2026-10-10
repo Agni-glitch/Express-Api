@@ -19,6 +19,7 @@ A movies REST API built with **Express.js** and **MongoDB**, with a **React** fr
 - [Running Locally](#running-locally)
 - [Environment Variables](#environment-variables)
 - [Running with Docker](#running-with-docker)
+- [Deploying to Vercel](#deploying-to-vercel)
 - [API Reference](#api-reference)
   - [Authentication](#authentication)
   - [Movies](#movies)
@@ -66,6 +67,7 @@ A movies REST API built with **Express.js** and **MongoDB**, with a **React** fr
 | Email | Nodemailer (any SMTP server, e.g. Mailtrap) |
 | Frontend | React 19, React Router 7, Vite, Tailwind CSS 4 |
 | Containers | Docker, Docker Compose, nginx |
+| Hosting | Vercel (static frontend + serverless API) |
 
 ---
 
@@ -78,7 +80,9 @@ Express-Api/
 ├── Controllers/           # request handlers (auth, movies, users) and the global error handler
 ├── Models/                # Mongoose schemas (Movie, User)
 ├── Routes/                # route definitions
-├── Utils/                 # query helper, custom error class, email sender, DNS fallback
+├── Utils/                 # query helper, custom error class, email sender, DB connection, DNS fallback
+├── api/index.js           # Vercel serverless entry point for the API
+├── vercel.json            # Vercel build settings and rewrites
 ├── data/                  # sample movies and the import/delete script
 ├── postman/               # Postman collection
 ├── frontend/              # React client (Vite), with its own Dockerfile and nginx config
@@ -125,10 +129,10 @@ Express-Api/
 4. **Start the API**
 
    ```bash
-   npm start
+   npm run dev
    ```
 
-   The API runs on `http://localhost:3000` and restarts on file changes (nodemon). You should see `server has started..` followed by `DB connection successful`.
+   The API runs on `http://localhost:3000` and restarts on file changes (nodemon). `npm start` runs it with plain `node`, without restarts. You should see `server has started..` followed by `DB connection successful`.
 
 5. **Start the frontend** in a second terminal
 
@@ -152,7 +156,7 @@ Express-Api/
 
 ## Environment Variables
 
-The API reads these from `config.env` in the project root.
+The API reads these from `config.env` in the project root. On Vercel they are set in the project settings instead.
 
 | Variable | Required | Description |
 | --- | --- | --- |
@@ -166,7 +170,7 @@ The API reads these from `config.env` in the project root.
 | `EMAIL_USER` | For password reset | SMTP username. |
 | `EMAIL_PASSWORD` | For password reset | SMTP password. |
 | `FRONTEND_URL` | No | When set, password reset emails link to the frontend's reset page (`<FRONTEND_URL>/reset-password/<token>`) instead of the API endpoint. Use `http://localhost:5173` for local development. |
-| `TRUST_PROXY` | No | Number of reverse proxies in front of the API, so rate limiting sees the real client IP. Leave unset when clients connect directly. Docker Compose sets it to `1`. |
+| `TRUST_PROXY` | No | Number of reverse proxies in front of the API, so rate limiting sees the real client IP. Leave unset when clients connect directly. Docker Compose sets it to `1`, and on Vercel it defaults to `1`. |
 | `DNS_SERVERS` | No | Comma-separated DNS servers to use if the SRV lookup for a `mongodb+srv://` string is refused. Defaults to `8.8.8.8,1.1.1.1`. |
 
 The frontend has one optional variable, in `frontend/.env`:
@@ -214,6 +218,32 @@ FRONTEND_PORT=9000 API_PORT=4000 docker compose up -d
 ```
 
 In PowerShell, set them first: `$env:FRONTEND_PORT = 9000; docker compose up -d`.
+
+---
+
+## Deploying to Vercel
+
+The repository deploys as a single Vercel project: the built frontend is served as static files, and the Express API runs as one serverless function (`api/index.js`) behind `/api`. Both share an origin, so no CORS setup is needed. `vercel.json` holds the build settings, so nothing has to be configured in the dashboard except environment variables.
+
+1. **Use a MongoDB Atlas cluster.** In Atlas, under Network Access, allow `0.0.0.0/0`: Vercel functions have no fixed IP address.
+2. **Import the repository** at [vercel.com/new](https://vercel.com/new), leaving the root directory and build settings as they are. Or use the CLI: `npx vercel`, then `npx vercel --prod`.
+3. **Add the environment variables** under Settings > Environment Variables, then redeploy:
+
+   | Variable | Value |
+   | --- | --- |
+   | `CONN_STR` | Your Atlas `mongodb+srv://...` string. |
+   | `SECRET_STR` | A new long random string, e.g. from `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. |
+   | `LOGIN_EXPIRES` | e.g. `30d`. |
+   | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD` | SMTP settings of a real mail provider. A Mailtrap sandbox does not deliver to real mailboxes. |
+   | `FRONTEND_URL` | The deployment's URL, e.g. `https://your-app.vercel.app`, so password reset links open the frontend. |
+
+   `NODE_ENV` and `PORT` are not needed: Vercel runs functions with `NODE_ENV=production`.
+
+Things that behave differently on Vercel:
+
+- `server.js` is not used. `api/index.js` connects to MongoDB on the first request and reuses the connection while the function stays warm.
+- The filesystem is read-only, so the movie model's `Log/log.txt` logging is skipped. Errors go to the function logs in the Vercel dashboard.
+- The rate limiter counts requests in memory, per function instance, so its limit is approximate. Use a shared store (e.g. Redis) or Vercel's firewall if you need a strict one.
 
 ---
 
@@ -411,7 +441,7 @@ Both scripts act on the database in `CONN_STR`.
   node data/import-dev-data.js --delete
   ```
 
-`npm run start_prod` starts the API with `NODE_ENV=production`. It uses Windows `cmd` syntax, so on macOS or Linux run `NODE_ENV=production npx nodemon server.js` instead.
+`npm run dev` starts the API with nodemon, `npm start` with plain `node`. `npm run start_prod` starts the API with `NODE_ENV=production`. It uses Windows `cmd` syntax, so on macOS or Linux run `NODE_ENV=production npx nodemon server.js` instead.
 
 ---
 
@@ -424,6 +454,7 @@ Import [`postman/Express-Api.postman_collection.json`](postman/Express-Api.postm
 ## Troubleshooting
 
 - **The app runs but shows no movies (especially in Docker).** The API is probably connected to a different, empty database. Check `CONN_STR` in `config.env` and confirm the API logs show `DB connection successful`. Also remember that movies without a past `releaseDate` are hidden.
+- **On Vercel, API calls return 503 `Service temporarily unavailable`.** The function could not connect to MongoDB. Check `CONN_STR` in the Vercel project settings and that Atlas allows `0.0.0.0/0`, then look at the function logs for the exact error.
 - **`querySrv ECONNREFUSED` on startup.** Node could not resolve the `mongodb+srv://` address. The API retries with public DNS servers automatically; set `DNS_SERVERS` to use different ones.
 - **The API cannot connect to Atlas.** Add your current IP address under Network Access in Atlas, and check the username and password in `CONN_STR`.
 - **`You are not logged in` (401).** The endpoint needs an `Authorization: Bearer <token>` header. Tokens are tied to the database's users, so log in again after switching databases.

@@ -94,12 +94,13 @@ movieSchema.virtual("durationInHours").get(function () {
 
 movieSchema.pre("save", function (next) {
   this.createdBy = "AGNI ROYBAR";
-  console.log(this);
   next();
 });
 
 // logging must never fail the request, so errors are only reported
 const writeLog = (content) => {
+  // Vercel's filesystem is read-only
+  if (process.env.VERCEL) return;
   try {
     fs.mkdirSync("./Log", { recursive: true });
     fs.writeFileSync("./Log/log.txt", content, { flag: "a" });

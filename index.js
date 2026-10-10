@@ -14,9 +14,10 @@ const authRouter = require('./Routes/authRouter')
 const userRoute = require('./Routes/userRoutes')
 
 // behind a reverse proxy (e.g. the Docker nginx frontend) the client IP comes from X-Forwarded-For;
-// TRUST_PROXY is the number of proxies in front of the app
-if (process.env.TRUST_PROXY) {
-  app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY)
+// TRUST_PROXY is the number of proxies in front of the app. Vercel always puts one in front.
+const trustProxy = process.env.TRUST_PROXY || (process.env.VERCEL ? '1' : '')
+if (trustProxy) {
+  app.set('trust proxy', Number(trustProxy) || trustProxy)
 }
 
 app.use(helmet()) // adding security headers

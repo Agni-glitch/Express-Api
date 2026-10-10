@@ -16,6 +16,8 @@ const prodError = (res, error) => {
       message: error.message,
     });
   } else {
+    // the client gets a generic message, so the details have to reach the server logs
+    console.error(error);
     res.status(500).json({
       status: "error",
       message: "Something went wrong! Please try again later.",

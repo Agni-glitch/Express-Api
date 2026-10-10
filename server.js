@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config.env" });
 
@@ -9,10 +8,9 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = require("./index");
-const dnsFallback = require("./Utils/dnsFallback");
+const connectDB = require("./Utils/db");
 
-dnsFallback(process.env.CONN_STR)
-  .then(() => mongoose.connect(process.env.CONN_STR))
+connectDB()
   .then((conn) => {
     console.log("DB connection successful");
   })
